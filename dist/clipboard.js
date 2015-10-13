@@ -206,17 +206,66 @@ E.prototype = {
 module.exports = E;
 
 },{}],6:[function(require,module,exports){
-/**
- * Inner class which performs selection from either `text` or `target`
- * properties and then executes copy or cut operations.
- */
+var module = module || {};
+
+module.exports = function () {
+  var selection = document.getSelection();
+  if (!selection.rangeCount) {
+    return function () {};
+  }
+  var active = document.activeElement;
+
+  var ranges = [];
+  for (var i = 0; i < selection.rangeCount; i++) {
+    ranges.push(selection.getRangeAt(i));
+  }
+
+  switch (active.tagName.toUpperCase()) { // .toUpperCase handles XHTML
+    case 'INPUT':
+    case 'TEXTAREA':
+      active.blur();
+      break;
+
+    default:
+      active = null;
+      break;
+  }
+
+  selection.removeAllRanges();
+  return function () {
+    selection.type === 'Caret' &&
+    selection.removeAllRanges();
+
+    if (!selection.rangeCount) {
+      ranges.forEach(function(range) {
+        selection.addRange(range);
+      });
+    }
+
+    active &&
+    active.focus();
+  };
+};
+
+},{}],7:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+var _toggleSelection = require('toggle-selection');
+
+var _toggleSelection2 = _interopRequireDefault(_toggleSelection);
+
+/**
+ * Inner class which performs selection from either `text` or `target`
+ * properties and then executes copy or cut operations.
+ */
 
 var ClipboardAction = (function () {
     /**
@@ -294,7 +343,7 @@ var ClipboardAction = (function () {
 
     /**
      * Only removes the fake element after another click event, that way
-     * an user can hit `Ctrl+C` to copy because selection still exists.
+     * a user can hit `Ctrl+C` to copy because selection still exists.
      */
 
     ClipboardAction.prototype.removeFake = function removeFake() {
@@ -318,12 +367,15 @@ var ClipboardAction = (function () {
             this.target.select();
             this.selectedText = this.target.value;
         } else {
+            var reselectPrevious = _toggleSelection2['default']();
             var range = document.createRange();
             var selection = window.getSelection();
 
             range.selectNodeContents(this.target);
             selection.addRange(range);
             this.selectedText = selection.toString();
+
+            reselectPrevious();
         }
 
         this.copyText();
@@ -444,7 +496,7 @@ var ClipboardAction = (function () {
 exports['default'] = ClipboardAction;
 module.exports = exports['default'];
 
-},{}],7:[function(require,module,exports){
+},{"toggle-selection":6}],8:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -610,5 +662,5 @@ function getAttributeValue(suffix, element) {
 exports['default'] = Clipboard;
 module.exports = exports['default'];
 
-},{"./clipboard-action":6,"delegate-events":1,"tiny-emitter":5}]},{},[7])(7)
+},{"./clipboard-action":7,"delegate-events":1,"tiny-emitter":5}]},{},[8])(8)
 });
